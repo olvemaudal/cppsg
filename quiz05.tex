@@ -1,0 +1,775 @@
+\documentclass[landscape]{slides}
+
+\usepackage[margin=.5in]{geometry}
+
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphics}
+\usepackage[english]{babel}
+
+\definecolor{hellgelb}{rgb}{1,1,0.8}
+\lstset{basicstyle={\tiny\ttfamily},backgroundcolor=\color{hellgelb},frame=single,numbers=left,numberstyle={\tiny\sffamily},firstnumber=auto}
+
+\newcommand{\st}{Slide Title}
+
+\onlyslides{0-999}
+
+\begin{document}
+
+%%%%%
+
+\renewcommand\st{§12.2, Derived classes}
+\begin{slide}
+
+\begin{lstlisting}
+class X;
+
+class Y : public X {
+    int b;
+};
+
+class X {
+    int a;
+};
+\end{lstlisting}
+
+What might happen if you try to compile this code?
+
+\begin{note}
+\st
+\begin{tiny}
+
+On my machine I get:
+
+\begin{verbatim}
+g++ scratch.cpp 
+scratch.cpp:3: error: invalid use of undefined type 'struct X'
+scratch.cpp:1: error: forward declaration of 'struct X'
+\end{verbatim}
+
+[p304] Using a class as a base is equivalent to declaring an (unnamed) object of
+that class. Consequently, a class must be defined in order to be used as a base.
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§12.2.2 Constructor}
+\begin{slide}
+
+\begin{lstlisting}
+struct Foo {
+    Foo(int a, int b) : a_(a), b_(b) {}
+    int a_;
+    int b_;
+};
+
+struct Bar : Foo {
+    Bar(int a, int b, int c) : a_(a), b_(b), c_(c) {}
+    int c_;
+};
+\end{lstlisting}
+
+This code does not compile. Why not? How to fix? 
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ scratch.cpp 
+scratch.cpp: In constructor 'Bar::Bar(int, int, int)':
+scratch.cpp:8: error: class 'Bar' does not have any field named 'a_'
+scratch.cpp:8: error: class 'Bar' does not have any field named 'b_'
+scratch.cpp:8: error: no matching function for call to 'Foo::Foo()'
+scratch.cpp:2: note: candidates are: Foo::Foo(int, int)
+scratch.cpp:1: note:                 Foo::Foo(const Foo&)
+\end{verbatim}
+
+[p306] A derived class constructor can specify initializers for its own members and
+immediate bases only; it cannot directly initialize members of a base.
+
+To fix this you might consider something like:
+\begin{verbatim}
+struct Bar : Foo {
+    Bar(int a, int b, int c) : Foo(a,b), c_(c) {}
+    int c_;
+};
+\end{verbatim}
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§12.2.2, Constructors and Destructors}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct Foo {
+    Foo() { p(1); }
+    ~Foo() { p(2); }
+};
+
+struct Bar : Foo {
+    Bar() { p(3); }
+    ~Bar() { p(4); }
+};
+
+struct Gaz : Bar {
+    Gaz() { p(5); }
+    ~Gaz() { p(6); }
+};
+
+int main() {
+    p('-');
+    Foo f;
+    p('-');
+    Bar b;
+    p('-');
+    Gaz g;
+    p('-');
+}
+\end{lstlisting}
+
+What will this code print out?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+-1-13-135-642422
+\end{verbatim}
+\end{tiny}
+
+[p307] Class objets are constructed from the bottom up: first the
+base, then the members, and then the derived class itself. They are
+destroyed in the opposite order: first the derived class itself, then
+the members, and then the base. Members and bases are constructed in
+order of declaration in the class and destroyed in the reverse order.
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§12.2.4, Class Hierarchies}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct A {
+    A() { p(1); }
+    ~A() { p(2); }
+};
+
+struct B : A {
+    B() { p(3); }
+    ~B() { p(4); }
+};
+
+struct C : A, B {
+    C() { p(5); }
+    ~C() { p(6); }
+};
+
+struct D {
+    D() { p(7); }
+    ~D() { p(8); }
+};
+
+struct E : D, B, C {
+    E() { p(9); }
+    ~E() { p(0); }
+};
+
+int main() {
+    E e;
+    p('-');
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+scratch.cpp:15: warning: direct base 'A' inaccessible in 'C' due to ambiguity
+scratch.cpp:25: warning: direct base 'B' inaccessible in 'E' due to ambiguity
+71311359-06422428
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Public/Protected/Private Inheritance}
+\begin{slide}
+
+\begin{lstlisting}
+class A {
+    // ...
+};
+
+class B : private A {
+    // ...
+};
+
+class C : protected A {
+    // ...
+};
+
+class D : public A {
+    // ...
+};
+
+int main() {
+    A * a1 = new B();
+    A * a2 = new C();
+    A * a3 = new D();
+}
+\end{lstlisting}
+
+Consider this code. What might happen when you try to compile
+this code? What does private inheritance mean? When should you
+use protected inheritance?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:18: error: 'A' is an inaccessible base of 'B'
+scratch.cpp:19: error: 'A' is an inaccessible base of 'C'
+\end{verbatim}
+\end{tiny}
+
+What about using reinterpret_cast<A*>?
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Virtual Destructor}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+class A {
+    char * s;
+public:
+    A() { p('A'); s = new char[1024]; }
+    ~A() { p('a'); delete[] s; }
+};
+
+class Foo {
+    A a;
+public:
+    virtual void print() = 0;
+};
+
+class Bar : public Foo {
+    A a;
+public:
+    virtual void print() { p(1); };
+};
+
+int main() {
+    p('-');
+    Foo * f = new Bar;
+    p('-');
+    f->print();
+    p('-');
+    delete f;
+    p('-');
+}
+\end{lstlisting}
+
+What will this code print out? Please criticize.
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp:12: warning: 'class Foo' has virtual functions but non-virtual destructor
+scratch.cpp:18: warning: 'class Bar' has virtual functions but non-virtual destructor
+-AA-1-a-
+\end{verbatim}
+
+We create two objects of type A, but destroy only one. How to fix? eg, virtual ~Foo() {}
+
+Will a virtual Foo destructor fix the warning on line 18?
+
+Should A have a virtual destructor? No. Same problem can happen with A, but without
+virtual members it is kind of obvious that it was not designed for polymorphism.
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Where to put virtual destructors}
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.5\linewidth}
+
+\begin{lstlisting}[name=A]
+#include <iostream>
+
+template<typename T> void p(T x) { 
+    std::cout << x; 
+}
+
+struct A {
+    A() { p('A'); }
+    ~A() { p('a'); }
+};
+
+struct B : A {
+    B() { p('B'); }
+    ~B() { p('b'); }
+};
+
+class Foo {
+public:
+    virtual A * create() const { 
+        p(1); 
+        return new A(); 
+    }
+};
+
+class Bar : public Foo {
+public:
+    virtual B * create() const { 
+        p(2); 
+        return new B(); 
+    }
+};
+
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.38\linewidth}
+\begin{lstlisting}[name=A]
+int main() {
+    const Foo & f1 = Foo();
+    A * a1 = f1.create();
+    delete a1;
+    p('-');
+
+    const Foo & f2 = Bar();
+    A * a2 = f2.create(); 
+    delete a2;
+    p('-');
+
+    const Bar & f3 = Bar();
+    B * a3 = f3.create(); 
+    delete a3;
+    p('-');
+}
+\end{lstlisting}
+\end{minipage}
+\end{tabular*}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp:17: warning: 'class Foo' has virtual functions but non-virtual destructor
+scratch.cpp:25: warning: 'class Bar' has virtual functions but non-virtual destructor
+1Aa-2ABa-2ABba-
+\end{verbatim}
+
+What will happen if we add a virtual destructor to Foo? Nothing
+
+What will happen if we add virtual to A destructor? 1Aa-2ABba-2ABba-
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Templates}
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.55\linewidth}
+
+\begin{lstlisting}[name=Templates]
+#include <iostream>
+
+struct A {
+    void func() { std::cout << 'A'; }
+};
+
+struct B {
+    void func() { std::cout << 'B'; }
+};
+
+struct C {
+    void run() { std::cout << 'C'; }
+};
+
+template<typename T> class Foo {
+public:
+    Foo(const T & t) : value(t) { }
+    void run();
+private:
+    T value;
+};
+
+template<typename T> void Foo<T>::run() {
+    value.func();
+}
+
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.38\linewidth}
+\begin{lstlisting}[name=Templates]
+int main() {
+    A a;
+    Foo<A> fa(a);
+    fa.run();
+    
+    B b;
+    Foo<B> fb(b);
+    fb.run();
+    
+    C c;
+    Foo<C> fc(c);
+    c.run();
+}
+\end{lstlisting}
+\end{minipage}
+\end{tabular*}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+ABC
+\end{verbatim}
+
+[p327] A template depends only on the properties that it actually uses
+from its parameter types and does not require different types used as 
+arguments to be explicitly related. In particular, the argument types
+used for a template need not be from a single inheritance hierarchy.
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Template Parameters}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T, int maxsize> class Foo {
+    T vector_[maxsize];
+public:
+    int size() {
+        return sizeof(vector_) / sizeof(T);
+    }
+    // ...
+};
+
+int main() {
+    Foo<int, 4> a;
+    std::cout << a.size();
+
+    int sz=2;
+    Foo<char, sz> b;
+    std::cout << b.size();
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:17: error: 'sz' cannot appear in a constant-expression
+scratch.cpp:17: error: template argument 2 is invalid
+scratch.cpp:17: error: invalid type in declaration before ';' token
+scratch.cpp:18: error: request for member 'size' in 'b', which is of non-class type 'int'
+\end{verbatim}
+
+You can fix this by adding const on line 16. Then you get: 42
+
+Note that line 7 could have been replaced by "return maxsize;". This partly
+explains why maxsize must be a const.
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Function Templates}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T, T threshold> bool gt(T t) {
+    std::cout << t << '>' << threshold;
+    return t > threshold;
+}
+
+int main() {
+    std::cout << std::boolalpha << "=" << gt<int,5>(3);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+3>5=false
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Implicit and Explicit Specification}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <sstream>
+
+template<typename T> bool istrue(T t) {
+    std::stringstream s;
+    s << t;
+    return s.str() == "42";
+}
+
+int main() {
+    std::cout << std::boolalpha;
+
+    int t = 42;
+    std::cout << istrue(t) << std::endl;
+
+    float f = 43;
+    std::cout << istrue(f) << std::endl;
+
+    char * s = "42";
+    std::cout << istrue(s) << std::endl;
+
+    char c = 42;
+    std::cout << istrue(c) << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+true
+false
+true
+false
+\end{verbatim}
+
+How can we make line 23 print out true? Eg, by doing explicit specification
+of the template argument
+
+\begin{verbatim}
+std::cout << istrue<int>(c) << std::endl;
+\end{verbatim}
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Order of specializations}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <sstream>
+
+template<typename T> void foo(T t) {
+    std::cout << 'a';
+}
+
+void foo(float t) {
+    std::cout << 'b';
+}
+
+void foo(long t) {
+    std::cout << 'c';
+}
+
+int main() {
+    foo(42);
+    foo("42");
+    foo(42L);
+    foo(42.3);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+aaca
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{Template Function Specializations}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void foo(T t) {
+    std::cout << 1;
+}
+
+template<typename T> void foo(T * t) {
+    std::cout << 2;
+}
+
+template<> void foo(char) {
+    std::cout << 4;
+}
+
+int main() {
+    int a;
+    foo(a);
+    foo(&a);
+    char b;
+    foo(b);
+    foo(&b);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+1242
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+%% \renewcommand\st{§x.x, title}
+%% \begin{slide}
+%% 
+%% \begin{lstlisting}
+%% 
+%% \end{lstlisting}
+%% 
+%% what might happen if you try to compile, link and run this program?
+%% 
+%% \begin{note}
+%% \st
+%%
+%% \begin{tiny}
+%% \begin{verbatim}
+%% 
+%% \end{verbatim}
+%% \end{tiny}
+%%
+%% \end{note}
+%% 
+%% \end{slide}
+
+\end{document}

@@ -1,0 +1,819 @@
+\documentclass[landscape]{slides}
+
+\usepackage[margin=.5in]{geometry}
+
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphics}
+\usepackage[english]{babel}
+
+\definecolor{hellgelb}{rgb}{1,1,0.8}
+\lstset{basicstyle={\tiny\ttfamily},backgroundcolor=\color{hellgelb},frame=single,numbers=left,numberstyle={\tiny\sffamily}}
+
+\newcommand{\st}{Slide Title}
+
+\onlyslides{0-999}
+
+\begin{document}
+
+%%%%%
+
+\renewcommand{\st}{§7.1.2 Static Variables, [p145]}
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+static int a = 0;
+int b = 0;
+
+void f(int n) {
+    static int c = 0;
+    while ( n-- ) {
+        static int d = 0;
+        int e = 0;
+        std::cout << a++ << b++ << c++ << d++ << e++ << std::endl;
+    }
+}
+
+int main() {
+    f(3);
+    f(3);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+00000
+11110
+22220
+33330
+44440
+55550
+\end{verbatim}
+
+What might happen if you do not init the variables? All static
+variables, a,b,c,d will be set to 0, the initial value of e is
+unknown, but e will probably increase for each invokation. Eg you
+might get something like:
+
+\begin{verbatim}
+g++ -O1 -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'void f(int)':
+scratch.cpp:10: warning: 'e' is used uninitialized in this function
+00002
+11113
+22224
+33332
+44443
+55554
+\end{verbatim}
+
+When is a local variable initialized? (p145, A local variable is
+initialized when the thread of execution reaches its definition.)
+
+When is a static variable initialized? (p145, A static variable will
+be initialized only the first time the thread of execution reaches its
+definition.)
+
+What is the difference between line 3 and 4? The static on line 3 does
+not mean the same as the other static, it is a linkage directive. In
+modern C++ you should not use static like this, consider an unnamed
+namespace instead (p200).
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§7.2, argument passing}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+void f( int a, int & b, int * c ) {
+    ++a;
+    ++b;
+    ++c;
+}
+
+int main() {
+    int a = 3;
+    int b = 4;
+    int c = 5;
+    std::cout << a << ',' << b << ',' << c << std::endl;
+    f(a,b,c);
+    std::cout << a << ',' << b << ',' << c << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:14: error: invalid conversion from 'int' to 'int*'
+scratch.cpp:14: error:   initializing argument 3 of 'void f(int, int&, int*)'
+\end{verbatim}
+
+Suppose you fix line 14 with
+\begin{verbatim}
+    foo(a,b,&c);
+\end{verbatim}
+then the following is printed:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+3,4,5
+3,5,5
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§7.2,§72, argument passing and value return}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+void p(int i) { std::cout << i; }
+void p(char ch) { std::cout << ch; }
+
+class A {
+public:
+    A() { p(1); }
+    A(const A & a) { p(2); }
+    void operator=(const A & a) { p(3); }
+    A(int i) { p(4); }
+    ~A() { p(5); }
+};
+
+void f(A & a) { p('f'); }
+void g(const A & a) { p('g'); }
+A h() { p('h'); return 1; }
+const A & i() { p('i'); return 1; }
+
+int main() {
+    A a;
+    p('-'); f(a);
+    p('-'); g(a);
+    p('-'); g(1);
+    p('-'); a = h();
+    p('-'); a = i();
+    p('-');
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'const A& i()':
+scratch.cpp:18: warning: returning reference to temporary
+1-f-g-4g5-h435-i453-5
+\end{verbatim}
+
+What do you thing about line 10? How to fix it? (return reference to this)
+
+Why can't overloading distinguish on return values? Two reasons:
+
+- ambiguities for invocations that does not assign to something
+
+- destroys arithmetic properties (??? find ref)
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§7.4, overloaded function names}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+void p(double) { std::cout << "p(double)" << std::endl; }
+void p(float) { std::cout << "p(float)" << std::endl; }
+void p(std::string) { std::cout << "p(std::string)" << std::endl; }
+void p(const char *) { std::cout << "p(const char *)" << std::endl; }
+void p(char *) { std::cout << "p(char *)" << std::endl; }
+void p(long) { std::cout << "p(long)" << std::endl; }
+void p(char) { std::cout << "p(char)" << std::endl; }
+
+int main() {
+    p(1.9);
+    p('s');
+    p("hello");
+    p(1);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:16: error: call of overloaded 'p(int)' is ambiguous
+scratch.cpp:4: note: candidates are: void p(double)
+scratch.cpp:5: note:                 void p(float)
+scratch.cpp:6: note:                 void p(std::string) <near match>
+scratch.cpp:7: note:                 void p(const char*) <near match>
+scratch.cpp:8: note:                 void p(char*) <near match>
+scratch.cpp:9: note:                 void p(long int)
+scratch.cpp:10: note:                 void p(char)
+\end{verbatim}
+
+How can you fix this by adding just one character? Eg, by changing line 16 to 'p(1L)'
+Then it will print:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+p(double)
+p(char)
+p(const char *)
+p(long)
+\end{verbatim}
+
+Keeping our new line 16. What will happen if you comment out line 7?
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+p(double)
+p(char)
+p(char *)
+p(long)
+\end{verbatim}
+\end{tiny}
+
+A literal string in C++ is "magic", it is really a "const char *" but it will
+be silently converted to a "char *" if needed. This is due to C compatibility.
+Apparently this is about to change with the next version of C++. (??? is this true?)
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§7.8, badly used macros}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
+int main() {
+    int a=2;
+    int b=3;
+    int c=0;
+    std::cout << c << a << b << std::endl;
+    c = MIN(++a,++b);
+    std::cout << c << a << b << std::endl;
+    c = MIN(++a,++b);
+    std::cout << c << a << b << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+023
+444
+656
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§7.8, badly written macros}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+#define MAX(a,b) a > b ? a : b
+
+int main() {
+    int a=2;
+    int b=3;
+    int c=0;
+    std::cout << c << a << b << std::endl;
+    c = 42 + MAX(a,b);
+    std::cout << c << a << b << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+023
+223
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§8.2.5.1, Unnamed Namespaces}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int a = 4;
+
+namespace {
+    int b = 5;
+};
+
+int main() {
+    std::cout << a << std::endl;
+    std::cout << b << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+4
+5
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 
+
+\renewcommand\st{§8.2, Namespaces and scope resolution}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+void f() { p(1); }
+
+namespace A {
+    void f() { p(2); }
+}
+
+void g() { p(3); }
+
+namespace {
+    void g() { p(4); }
+};
+
+int main() {
+    f();
+    g();
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:20: error: call of overloaded 'g()' is ambiguous
+scratch.cpp:11: note: candidates are: void g()
+scratch.cpp:14: note:                 void<unnamed>::g()
+\end{verbatim}
+
+How can you make this code print 13? eg, do ::g() on line 19, or comment out line 14
+
+How can you make this code print 14? eg, comment out line 11 (is there a way to do scope resolution into an unnamed namespace?)
+
+How can you make this code print 23? Use 'A::f()' on line 18, and '::g()' on line 19'
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§8.2, Namespaces, defining declared members}
+\begin{slide}
+
+\tiny{foo.hpp}
+\begin{lstlisting}
+namespace Foo {
+    void f();
+}
+\end{lstlisting}
+
+\tiny{foo.cpp}
+\begin{lstlisting}
+#include <iostream>
+#include "foo.hpp"
+
+namespace Foo {
+    void f() { std::cout << "f()" << std::endl; }
+}
+
+namespace {
+    void g() { Foo::f(); }
+}
+
+int main() {
+    g();
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+Please criticize.
+
+\begin{note}
+\st
+\begin{tiny}
+It will compile, link, run and print out f().
+
+However, there are at least three tings to criticized:
+
+- [p185] When defining a previously declared member of a namespace, it is
+  safer to define it outside, rather than reopen, the namespace.
+
+- it is recomended to including your own headers first, then stable libraries
+
+- include guards are missing on foo.hpp [9.3.3,p216]
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§8.3, Exceptions}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct A {};
+struct B : A {};
+struct C : B {};
+struct D : C {};
+
+int main() {
+    try {
+        p(1);
+        throw B();
+        p(2);
+    } catch(A a) {
+        p(3);
+        throw C();
+        p(4);
+    } catch(B & b) {
+        p(5);
+        throw D();
+        p(6);
+    } catch(const C & c) {
+        p(7);
+        throw;
+        p(8);
+    } catch(...) {
+        p(9);
+    }
+    p(0);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+Criticize the code.
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:19: warning: exception of type 'B' will be caught
+scratch.cpp:15: warning:    by earlier handler for 'A'
+scratch.cpp:23: warning: exception of type 'C' will be caught
+scratch.cpp:19: warning:    by earlier handler for 'B'
+terminate called after throwing an instance of 'C'
+13
+\end{verbatim}
+
+Exceptions should be caught by copy as on line 15. Although it will often work
+it is recommended to catch by reference like on line 19 for several 
+reasons (???find ref)
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§9.2, Internal and External Linkage}
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.6\linewidth}
+
+\tiny{foo.hpp}
+\begin{lstlisting}
+int a;
+const int b = 42;
+int foo();
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\tiny{foo.cpp}
+\begin{lstlisting}
+#include "foo.hpp"
+
+int a = 42;
+int foo() {
+    return a;
+}
+\end{lstlisting}
+\end{minipage}
+\end{tabular*}
+
+\tiny{bar.cpp}
+\begin{lstlisting}
+#include "foo.hpp"
+#include <iostream>
+
+int main() {
+    std::cout << foo() << " is " << b << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program using this
+command line:
+
+\begin{lstlisting}[numbers=none]
+g++ -Wall foo.cpp bar.cpp && ./a.out
+\end{lstlisting}
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall foo.cpp bar.cpp && ./a.out
+foo.cpp:3: error: redefinition of 'int a'
+foo.hpp:1: error: 'int a' previously declared here
+\end{verbatim}
+  
+What happens if you comment out line 1 in foo.cpp? Link error
+
+\begin{verbatim}
+g++ -Wall foo.cpp bar.cpp && ./a.out
+/usr/bin/ld: multiple definitions of symbol _a
+/var/tmp//ccDvqXPk.o definition of _a in section (__DATA,__data)
+/var/tmp//ccFahyOW.o definition of _a in section (__DATA,__common)
+collect2: ld returned 1 exit status
+\end{verbatim}
+
+What happens if you comment out line 3 in foo.cpp? Still link error
+
+Why do you get linkage error? Because "int a;" is a definition
+
+Why doesn't the linker complain about line:2 in foo.hpp? b is also a definition, but it has internal linkage
+
+How can you fix this problem? Use 'extern int a;' to make it a declaration, and then you get "42 is 42"
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§9.2.3, The One-Definition Rule}
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.6\linewidth}
+
+\tiny{foo.hpp}
+\begin{lstlisting}
+struct S {
+    char a;
+    int b;
+};
+
+S foo();
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\tiny{foo.cpp}
+\begin{lstlisting}
+struct S {
+    int a;
+    char b;
+};
+
+S foo() {
+    S s;
+    s.a = 64;
+    s.b = 'A';
+    return s;
+}
+\end{lstlisting}
+\end{minipage}
+\end{tabular*}
+
+\tiny{bar.cpp}
+\begin{lstlisting}
+#include <iostream>
+#include "foo.hpp"
+
+S foo();
+
+int main() {
+    S s = foo();
+    std::cout << s.a << s.b << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program using this
+command line:
+\begin{lstlisting}[numbers=none]
+g++ -Wall foo.cpp bar.cpp && ./a.out
+\end{lstlisting}
+
+\begin{note}
+\st
+\begin{tiny}
+
+\begin{verbatim}
+g++ -Wall foo.cpp bar.cpp && ./a.out
+@65
+\end{verbatim}
+
+What will happen if you switch linke 2 and 3 in foo.cpp?
+
+\begin{verbatim}
+g++ -Wall foo.cpp bar.cpp && ./a.out
+A64
+\end{verbatim}
+
+What if you include "foo.hpp" in foo.cpp?
+
+\begin{verbatim}
+g++ -Wall foo.cpp bar.cpp && ./a.out
+foo.cpp:3: error: redefinition of 'struct S'
+foo.hpp:1: error: previous definition of 'struct S'
+\end{verbatim}
+
+What if you include "foo.hpp" in foo.cpp, and compile only bar.cpp?
+
+\begin{verbatim}
+g++ -Wall bar.cpp && ./a.out
+64A
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§9.4, Initialization and termination}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <ctype.h>
+
+struct X {
+    char id;
+    X(char ch) : id(ch) { std::cout << (char)toupper(id); }
+    ~X() { std::cout << id; }
+};
+
+struct A : X { A() : X('a') {} };
+struct B : X { B() : X('b') {} };
+struct C : X { C() : X('c') {} };
+struct D : X { D() : X('d') {} };
+struct E : X { E() : X('e') {} };
+struct F : X { F() : X('f') {} };
+
+A a;
+static B b;
+
+int main() {
+    C c;
+    static D d;
+    {
+        static E e;
+        F f;
+    }
+    return 0;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+ABCDEFfcedba
+
+What if you replace line 27 with 'exit(0);'?
+ABCDEFfedba
+
+Notice that C is not destroyed. (see p218)
+
+What if you replace line 27 with 'abort();'?
+
+g++ -Wall scratch.cpp && ./a.out
+ABCDEFf
+
+Critiques:
+- in modern C++ you should use #include <cctype> on line 2
+- in modern C++ you should use static_case<char> to do casting on line 6
+- what does static on line 18 mean? local linkage, in modern C++ use 
+  unnamed namespace instead
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% template
+
+%% \renewcommand\st{§x.x, title}
+%% \begin{slide}
+%% 
+%% \begin{lstlisting}
+%% 
+%% \end{lstlisting}
+%% 
+%% what might happen if you try to compile, link and run this program?
+%% 
+%% \begin{note}
+%% \st
+%% \begin{tiny}
+%% \begin{verbatim}
+%% 
+%% \end{verbatim}
+%% 
+%% \end{tiny}
+%% \end{note}
+%% 
+%% \end{slide}
+
+\end{document}

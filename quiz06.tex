@@ -1,0 +1,602 @@
+\documentclass[landscape]{slides}
+
+\usepackage[margin=.5in]{geometry}
+
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphics}
+\usepackage[english]{babel}
+
+\definecolor{hellgelb}{rgb}{1,1,0.8}
+\lstset{basicstyle={\tiny\ttfamily},backgroundcolor=\color{hellgelb},frame=single,numbers=left,numberstyle={\tiny\sffamily},firstnumber=auto}
+
+\newcommand{\st}{Slide Title}
+
+\onlyslides{0-999}
+
+\begin{document}
+
+%%%%%
+
+\renewcommand\st{§14.2, Grouping of Exceptions}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+class A { };
+class B : public A { };
+class C : public A { };
+
+void foo() {
+    p("1");
+    throw C();
+}
+
+int main() {
+    try {
+        p("2");
+        foo();
+        p("3");
+    } catch(B) {
+        p("4");
+    } catch(C) {
+        p("5");
+    } catch(A) {
+        p("6");
+    }
+    p("7");
+}
+\end{lstlisting}
+
+What might happen if you try to compile this code?
+
+\begin{note}
+\st
+\begin{tiny}
+
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+2157
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§15.3.2.2, Using-Declarations and Access Control}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+class A {
+protected:
+    void foo() { p("foo"); };
+};
+
+class B : virtual public A {
+public:
+    void bar() { p("bar"); };
+};
+    
+int main() {
+    B b;
+    b.foo();
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:7: error: 'void A::foo()' is protected
+scratch.cpp:17: error: within this context
+\end{verbatim}
+How con you make this code compile and print "foo"? Eg, by adding "using A::foo;" in
+the public part of B.
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§14.2, Derived Exceptions}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+class A {
+public:
+    virtual void boo() { p("A"); };
+};
+
+class B : public A {
+public:
+    virtual void boo() { p("B"); };
+};
+
+int main() {
+    try {
+        throw B();
+    } catch( A a ) {
+        a.boo();
+    }
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp:5: warning: 'class A' has virtual functions but non-virtual destructor
+scratch.cpp:10: warning: 'class B' has virtual functions but non-virtual destructor
+A
+\end{verbatim}
+
+How to make this code write "B"? Catch by reference
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{14.3.1 Re-Throw}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+class A { };
+
+int main() {
+    p("0");
+    try {
+        p("1");
+        try {
+            p("2");
+            throw A();
+            p("3");
+        } catch(...) {
+            p("4");
+            throw;
+            p("5");
+        }
+    } catch(A a) {
+        p("6");
+        throw;
+        p("7");
+    }
+    p("8");
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+terminate called after throwing an instance of 'A'
+01246
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§14.4.1, RAII}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+class B {
+public:
+    B() { p("B"); }
+    ~B() { p("b"); }
+};
+
+class A {
+    B * v;
+public:
+    A() { p("A"); v = new B[3]; throw "x"; }
+    ~A() { p("a"); delete[] v; }
+};
+
+int main() {
+    try {
+        p("0");
+        A a;
+        p("1");
+    } catch( const char * s ) {
+        p(s);
+    }
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+0ABBBx
+\end{verbatim}
+What if you remove the throw on line 14?
+\begin{verbatim}
+0ABBB1abbb
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§14.4.6.1, Exceptions and Member Initialization}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+class B {
+public:
+    B() { p("B"); throw "x"; }
+    ~B() { p("b"); }
+};
+
+class A {
+    B b;
+public:
+    A() try : b() { p("A"); } catch(...) { p("y"); }
+    ~A() { p("a"); }
+};
+
+int main() {
+    try {
+        p("0");
+        A a;
+        p("1");
+    } catch( const char * s ) {
+        p(s);
+    }
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+0Byx
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§14.6, Exception Specification}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+void foo() throw() {
+    throw "x";
+};
+
+int main() {
+    try {
+        p("0");
+        foo();
+        p("1");
+    } catch( const char * s ) {
+        p(s);
+    }
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+terminate called after throwing an instance of 'char const*'
+0
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§15.2.2, Inheritance and Using-Declarations}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct B {
+    void foo(int) { p(1); }
+};
+
+struct C : B {
+    void foo(float) { p(2); }
+};
+
+int main() {
+    C c;
+    c.foo(42);
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+2
+\end{verbatim}
+How to make this print 1? Add "using B::foo" after line 9.
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§15.2.4, Virtual Base Classes}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct A {
+    A() { p('A'); }
+};
+
+struct B : A {
+    B() { p('B'); }
+};
+
+struct C : virtual A {
+    C() { p('C'); }
+};
+
+struct D : B, C {
+    D() { p('D'); }
+};
+    
+int main() {
+    D d;
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+AABCD
+\end{verbatim}
+\end{tiny}
+What if we add "virtual" on line 9? ABCD
+What if we remove "virtual" on line 13? ABACD
+
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <typeinfo>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct A {
+    virtual void foo() { p("A"); }
+};
+
+struct B : A {
+    virtual void foo() { p("B"); }
+};
+
+struct C : A {
+    virtual void foo() { p("C"); }
+};
+
+int main() {
+    A * b = new B;
+    A * c = new C;
+    b = c;
+    b->foo();
+    b = dynamic_cast<B*>(c);
+    b->foo();
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I got:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp:6: warning: 'struct A' has virtual functions but non-virtual destructor
+scratch.cpp:10: warning: 'struct B' has virtual functions but non-virtual destructor
+scratch.cpp:14: warning: 'struct C' has virtual functions but non-virtual destructor
+
+Compilation exited abnormally with code 138 at Fri Oct 26 02:14:06
+\end{verbatim}
+Why does it crash? Because b is 0 on line 24.
+
+I did expect that it printed a "C", but std is not flushed so it is stuck in the buffer.
+Ass a std::flush to line 4 and it should print "C" before crashing. 
+
+Consider line 23 which gives b = 0. Is there a useful way of using
+dynamic cast like this? To determine if some object is of a particular type.
+
+What if we replace line 23 with a static cast or just plain old cast? Then you get "CC"
+
+What if you remove "virtual" on line 7,11,15? Then you get a compile error:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:23: error: cannot dynamic_cast 'c' (of type 'struct A*') to type 'struct B*' 
+                (source type is not polymorphic)
+\end{verbatim}
+
+That is quite handy.
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§15.4.4, Typeid and Extended Type Info}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <typeinfo>
+
+struct Foo {
+};
+
+struct Bar : Foo {
+};
+
+struct Gaz : Foo {
+};
+
+int main() {
+    Foo * b = new Bar;
+    Foo * c = new Gaz;
+    std::cout << typeid(*b).name();
+    std::cout << typeid(*c).name();
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+3Foo3Foo
+\end{verbatim}
+
+How can you get this code write out "3Bar3Gaz"? Add a dummy virtual 
+function to Foo.
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+%% 
+%% \renewcommand\st{§x.x, title}
+%% \begin{slide}
+%% 
+%% \begin{lstlisting}
+%% 
+%% \end{lstlisting}
+%% 
+%% what might happen if you try to compile, link and run this program?
+%% 
+%% \begin{note}
+%% \st
+%% 
+%% \begin{tiny}
+%% \begin{verbatim}
+%% 
+%% \end{verbatim}
+%% \end{tiny}
+%% 
+%% \end{note}
+%% 
+%% \end{slide}
+
+\end{document}

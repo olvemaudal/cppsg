@@ -1,0 +1,562 @@
+\documentclass[landscape]{slides}
+
+\usepackage[margin=.5in]{geometry}
+
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphics}
+\usepackage[english]{babel}
+\usepackage{underscore}
+
+\definecolor{hellgelb}{rgb}{1,1,0.8}
+\lstset{basicstyle={\tiny\ttfamily},backgroundcolor=\color{hellgelb},frame=single,numbers=left,numberstyle={\tiny\sffamily},firstnumber=auto}
+
+\newcommand{\st}{Slide Title}
+
+\onlyslides{0-999}
+
+\begin{document}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+#include <algorithm>
+
+int main() {
+    std::string s("kulturuke");
+    std::cout << s << std::endl;
+    while( next_permutation(s.begin(),s.end()) )
+        std::cout << s << std::endl;
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+kulturuke
+kultuuekr
+kultuuerk
+... 21721 more
+uuutrlekk
+uuutrlkek
+uuutrlkke
+\end{verbatim}
+
+What if you sort the string before entering the do loop? I get
+30240 lines:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+ekklrtuuu
+ekklrutuu
+ekklruutu
+... 
+uuutrlekk
+uuutrlkek
+uuutrlkke
+\end{verbatim}
+
+Is string a regular container?
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string s("Hello World!");
+    std::wstring ws(s);
+    std::cout << ws << std::endl;
+}
+\end{lstlisting}
+
+This code does not compile. How to fix?
+\begin{note}
+\st
+
+\begin{tiny}
+
+I get errors on both line 6 and 7. 
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:6: error: no matching function for call to 
+  'std::basic_string<wchar_t, std::char_traits<wchar_t>, 
+  std::allocator<wchar_t> >::basic_string(std::string&)'
+...
+scratch.cpp:7: error: no match for 'operator<<' in 'std::cout << ws'
+...
+\end{verbatim}
+
+Here is one way to "fix":
+\begin{verbatim}
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string s("Hello World!");
+    std::wstring ws(s.begin(), s.end());
+    std::wcout << ws << std::endl;
+}
+\end{verbatim}
+
+[p586],[p609]
+
+\end{tiny}
+
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string s1 = "Foo";
+    std::string s2 = "Gaz";
+    s2 = s1;
+    s2[0] = 'B';
+    std::cout << s1 << std::endl;
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+Foo
+\end{verbatim}
+
+Just for curiosity, what if you try?
+\begin{verbatim}
+#include <iostream>
+#include <string>
+
+int main() {
+    char s1[] = "Foo";
+    char s2[] = "Gaz";
+    s2 = s1;
+    s2[0] = 'B';
+    std::cout << s1 << std::endl;
+}
+\end{verbatim}
+
+Then I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:7: error: ISO C++ forbids assignment of arrays
+scratch.cpp:7: confused by earlier errors, bailing out
+\end{verbatim}
+(same is true for C99, C89)
+
+And of course, if you attempt 'char *' then you get a runtime error.
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string s1 = "abbcccde";
+    std::string::size_type p = s1.rfind("cc");
+    s1.replace(p, 2, "XXX");
+    std::string s2 = s1.substr(3, -2);
+    std::cout << s2 << std::endl;
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:8: warning: passing negative value '-0x00000000000000002' 
+  for argument 2 to 'std::basic_string<_CharT, _Traits, _Alloc> 
+  std::basic_string<_CharT, _Traits, _Alloc>::substr(typename _Alloc::size_type, 
+  typename _Alloc::size_type) const [with _CharT = char, _Traits 
+  = std::char_traits<char>, _Alloc = std::allocator<char>]'
+cXXXde
+\end{verbatim}
+\end{tiny}
+
+What would the value of 'p' be if the substring "cc" was not found? std::string::npos which is 4294967295 on my machine.
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main() {
+    int a = 4;
+    int b = 2;
+    std::clog << a << b;
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+
+I get:
+\begin{verbatim}
+42
+\end{verbatim}
+
+What is the difference between cerr and clog?
+
+Why was '<<' and '>>' chosen?
+
+[p607] '<<' and '>>' was chosen also because they bind the right way, that is (cout << a) << b rather than cout << (a << b);
+
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+struct A {
+    virtual std::ostream & put(std::ostream &) const = 0;
+};
+
+struct B : A {
+    std::ostream & put(std::ostream & s) const { return s << 'B'; }
+};
+
+std::ostream & operator<<(std::ostream & s, const A & a) {
+    return a.put(s);
+}
+    
+int main() {
+    B b;
+    std::cout << b << std::endl;
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+B
+\end{verbatim}
+
+[p612] This is a fine way to print out objects for which only a base class is known. 
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main() {
+    double pi = 3.14159265358979323846;
+    std::cout << pi << std::endl;
+    std::cout.precision(3);
+    std::cout << pi << std::endl;
+}
+\end{lstlisting}
+
+What does this print out? How could this code might look
+like if we were using a stream manipulator instead?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+3.14159
+3.14
+\end{verbatim}
+
+You might consider using a manipulator instead. Eg,
+\begin{verbatim}
+#include <iostream>
+#include <iomanip>
+
+int main() {
+    double pi = 3.14159265358979323846;
+    std::cout << pi << std::endl;
+    std::cout << std::setprecision(3) << pi << std::endl;
+}
+\end{verbatim}
+
+[21.4.6.2 Standard I/O Manipulators, p633]
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <fstream>
+#include <iostream>
+#include <string>
+
+int main() {
+
+    std::string ostr = "This is a test of writing and reading from files";
+    std::ofstream ofile("myfile.tmp");
+    ofile << ostr;
+
+    std::string istr;
+    std::ifstream ifile("myfile.tmp");
+    ifile >> istr;
+
+    std::cout << istr;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program? 
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get nothing, beacuse ofile is not flushed before we start reading
+from the file. Adding a ofile.flush() might help a bit. You can
+also do an explisit ofile.close(), but this is also implicitly
+done by the destructor [p639] so putting a scoping block around 
+line 7-9 will work.
+
+If you do that, then you will get 'This' printed out. Why? Because
+the >> will read tokens delimited by whitespace. If you want to 
+read a whole line you might consider:
+\begin{verbatim}
+#include <fstream>
+#include <iostream>
+#include <string>
+
+int main() {
+
+    std::string ostr = "This is a test of writing and reading from files";
+    std::ofstream ofile("myfile.tmp");
+    ofile << ostr;
+    ofile.close();
+    
+    std::string istr;
+    std::ifstream ifile("myfile.tmp");
+    std::getline(ifile,istr);
+
+    std::cout << istr;
+}
+\end{verbatim}
+which might give:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+This is a test of writing and reading from files
+\end{verbatim}
+
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <limits>
+
+int main() {
+    
+    std::cout << std::numeric_limits<char>::digits << std::endl;
+    
+    std::cout << std::numeric_limits<int>::digits << std::endl;
+    std::cout << std::numeric_limits<int>::max() << std::endl;
+    std::cout << std::numeric_limits<int>::min() << std::endl;
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+7
+31
+2147483647
+-2147483648
+\end{verbatim}
+or:
+\begin{verbatim}
+g++ -funsigned-char -Wall scratch.cpp && ./a.out
+8
+31
+2147483647
+-2147483648
+\end{verbatim}
+\end{tiny}
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{§x.x, title}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <valarray>
+
+double f(double d) {
+    return d + 1;
+}
+
+int main() {
+    const double a[] = {1.23, -4.54, 0.48, -1};
+    const double b[] = {1, 0, 0, 1};
+
+    std::valarray<double> va(a,4);
+    std::valarray<double> vb(b,4);
+    std::valarray<double> vc = va * vb;
+    vc *= 2;
+    std::valarray<double> vd = vc.apply(f);
+
+    for (size_t i=-0; i<vd.size(); i++) 
+        std::cout << vd[i] << " ";
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+
+I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+3.46 1 1 -1 
+\end{verbatim}
+\end{tiny}
+
+[p662] valarray - designed specifically for speed of the usual numeric vector operations.
+
+\end{note}
+
+\end{slide}
+
+%%%%%
+%% 
+%% \renewcommand\st{§x.x, title}
+%% \begin{slide}
+%% 
+%% \begin{lstlisting}
+%% 
+%% \end{lstlisting}
+%% 
+%% what might happen if you try to compile, link and run this program?
+%% 
+%% \begin{note}
+%% \st
+%% 
+%% \begin{tiny}
+%% \begin{verbatim}
+%% 
+%% \end{verbatim}
+%% \end{tiny}
+%% 
+%% \end{note}
+%% 
+%% \end{slide}
+
+\end{document}

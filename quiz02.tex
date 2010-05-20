@@ -1,0 +1,991 @@
+\documentclass[landscape]{slides}
+
+\usepackage[margin=.5in]{geometry}
+
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphics}
+\usepackage[english]{babel}
+
+\definecolor{hellgelb}{rgb}{1,1,0.8}
+\lstset{basicstyle={\tiny\ttfamily},backgroundcolor=\color{hellgelb},frame=single,numbers=left,numberstyle={\tiny\sffamily}}
+
+\onlyslides{0-999}
+
+\begin{document}
+
+%% 4.6, sizes
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+void println(size_t v) {
+    std::cout << v << ' ';
+}
+
+void println(bool b) {
+    std::cout << std::boolalpha << b << ' ';
+}
+
+int main() {
+    println(sizeof(bool));
+    println(sizeof(char));
+    println(sizeof(short));
+    println(sizeof(int));
+    println(sizeof(long));
+    println(sizeof(long long));
+    println(sizeof(float));
+    println(sizeof(double));
+    println(sizeof(long double));
+
+    println(sizeof(char) == 1);
+    println(sizeof(bool) < sizeof(int));
+    println(sizeof(short) < sizeof(int));
+    println(sizeof(int) == sizeof(long));
+    println(sizeof(unsigned int) == sizeof(signed int));
+    println(sizeof(long) >= 4);
+}
+\end{lstlisting}
+
+What will this code print out?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+On my machine (MacBook Pro, Intel Core Duo, OS X 10.4, gcc 4.0.1) I get:
+
+g++ -Wall scratch.cpp && ./a.out
+1 1 2 4 4 8 4 8 16 true true true true true true 
+
+[§4.6,p75]
+1 == sizeof(char) =< sizeof(short) =< sizeof(int) <= sizeof(long)
+1 <= sizeof(bool) <= sizeof(long)
+sizeof(char) <= sizeof(wchar_t) <= sizeof(long)
+sizeof(float) <= sizeof(double) <= sizeof(long double)
+sizeof(N) == sizeof(signed N) == sizeof(unsigend N)
+char is at least 8 bits
+short and int is at least 16 bits
+long is at least 32 bit.
+
+Notice that "long long" is not really in the C++ standard (yet) but
+it seems like most compilers accepts it.
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch4, signed/unsigned
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+void p1(int i) { std::cout << i << std::endl; }
+
+template<typename T> void p2(T x) { std::cout << x << std::endl; }
+
+int main() {
+
+    char c = 128;
+    p1(c);
+    p2(c);
+    
+    unsigned int i = -1;
+    p1(i);
+    p2(i);
+
+    long l = -1;
+    p1(l);
+    p2(l);
+    
+    double f = 3.14;
+    p1(f);
+    p2(f);
+
+    bool b = -1;
+    p1(b);
+    p2(b);
+}
+\end{lstlisting}
+
+What might happen if you compile, link and run this program?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+-128
+\200
+-1
+4294967295
+-1
+-1
+3
+3.14
+1
+1
+
+[§4.3,p72] Unfortunately, which choice is made for a plain char is implementation-defined.
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 4.8 Enums
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+enum day { mon, tue, wed, thu, fri, sat, sun };
+
+std::string toString(day d) {
+    std::string s;
+    switch(d) {
+    case mon: return "mon";
+    case tue: return "tue";
+    case wed: return "wed";
+    case thu: return "thu";
+    case sat: return "sat";
+    case sun: return "sun";
+    }
+    return "x";
+}
+
+int main() {
+    std::cout << toString(mon) << std::endl;
+    std::cout << toString(wed) << std::endl;
+    std::cout << toString(day(4)) << std::endl;
+    std::cout << toString(day(8)) << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you compile, link and run this program?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'std::string toString(day)':
+scratch.cpp:8: warning: enumeration value 'fri' not handled in switch
+mon
+wed
+x
+x
+
+Without -Wall, no warning is given.
+
+What happens in line 23 is undefined [§4.8,p77]. Since mon=0 
+to sun=6 can be represented by 3 bits, the range is only 0:7 and 
+thus 8 is not within the range. 
+
+How can this be done differently? Map, array, vector, ostream?
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+
+%% 4.9.2 Declaring multiple names, 5.3 Pointers into arrays
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main() {
+    char* str = "Hello World\n";
+    char* iter, end;
+
+    iter = &str[0];
+    end = &str[strlen(str)];
+
+    while ( iter != end ) {
+        std::cout.put(*iter);
+        ++iter;
+    }
+    std::cout.flush();
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:8: error: invalid conversion from 'char*' to 'char'
+scratch.cpp:10: error: ISO C++ forbids comparison between pointer and integer
+
+Line 5 declares multiple names, and while iter is a pointer to char, 
+end is a char and therefore you get a compilation error. Such constructs 
+make a program less readable and shuld be avoided [§4.9.2,p80].
+
+Line 8 is ok. [§5.3,p92] Taking a pointer to the element one beyond the
+end of an array is guaranteed to work. 
+
+Apart from the error in line 5, and that it is unusual to use  
+char pointers for strings in C++, this code demonstrates a reasonable
+way of iterating through an array.
+
+IMHO such declarations should be written like:
+
+    char * p;
+    char q;
+
+Hardcore C coders prefer 'char *p', like Kernighan and Ritchie does. 
+Hardcore C++ coders prefer 'char* p', like Stroustrup does. 
+The first form seems sensible in old style C, where declaring lots of
+variables in the top of a block is/was common and saving visual space
+make sense. In C++ you tend to declare variables as close to usage
+as possible, and most coders never declare multiple names in a single
+declarations. Also, grouping the operator like Stroustrup does 
+emphatizes the type more than the name.
+
+However, having a space on each side of the operator (*) in declarations
+seems to becoming more and more popular both for C and C++ for several 
+reasons. 
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 4.9.4 Scope and variable hiding 
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int x = 42;
+
+int main() {
+    int x = 43;
+    {
+        int x = 44;
+        std::cout << x << std::endl;
+    }
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ scratch.cpp && ./a.out
+44
+
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:6: warning: unused variable 'x'
+44
+
+g++ -Wshadow -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:6: warning: declaration of 'x' shadows a global declaration
+scratch.cpp:3: warning: shadowed declaration is here
+scratch.cpp:8: warning: declaration of 'x' shadows a previous local
+scratch.cpp:6: warning: shadowed declaration is here
+scratch.cpp:6: warning: unused variable 'x'
+44
+
+How can you make this code print 42? by using ::x in line 9
+Can you make this code print 43? ([§4.9.4,p82] There is no way to use a hidden local name)
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 4.9.5 Initialization
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int a;
+
+namespace {
+    int b;
+}
+
+int main() {
+    static int c;
+    int d;
+    int * e = new int();
+    
+    std::cout << a << std::endl;
+    std::cout << b << std::endl;
+    std::cout << c << std::endl;
+    std::cout << d << std::endl;
+    std::cout << *e << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+0
+0
+0
+0
+0
+
+The first three lines should always be 0, [§4.9.5,p83] static objects (global, 
+namespace, local static) is initialized to 0, while local variables and 
+objects created on the free store are not initialized by default.
+
+The variables in line 17 and 18 does not have a well-defined value. It 
+could be 0, as in this case, or it could be something else. 
+
+Notice that odd things might happen when you add compiler directives. Eg,
+
+g++ -O2 -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:11: warning: 'd' is used uninitialized in this function
+0
+0
+0
+-1599018720
+0
+
+Some people claim that explicit initializing static objects is confusing and should not 
+be done. Eg, they prefer:
+
+  static int x;         over            static int x = 0;
+
+Other claims that static objects should also be explicitly initialized for clearity.
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 5.2.1 Array Initializers
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+void p(int * p) {
+    std::string separator = "";
+    for ( int i = 0 ; i < 4 ; ++i ) {
+        std::cout << separator << p[i];
+        separator = ",";
+    }
+    std::cout << std::endl;
+}
+    
+int main() {
+    int a[4];
+    int b[4] = {1,2};
+    int c[4] = {};
+    static int d[4];
+    static int e[] = {1,2,3,4};
+
+    p(a);
+    p(b);
+    p(c);
+    p(d);
+    p(e);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+-1878716180,-1881117246,0,-1073743988
+1,2,0,0
+0,0,0,0
+0,0,0,0
+1,2,3,4
+
+[5.2.1,p89] if the initializer supplies too few elements, 0 is assumed for the remaining array elements..
+
+A small note on line 4 - some people will claim that initializing a string with
+and empty string is nonsense. Eg, they would rather write
+
+  std::string separator;
+
+The idiom used in line 4 to 8 is just one out of many idioms that can be used
+to print out a list of elements. (and it is not necessarily a very good idiom)
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 5.2.2 String Literals
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main() {
+    char a[] = "Foo";
+    char * b = "Bar";
+
+    std::cout << a << " " << b << std::endl;
+
+    a[0] = 'Z';
+    std::cout << a << " " << b << std::endl;
+
+    b[0] = 'C';
+    std::cout << a << " " << b << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+Foo Bar
+Zoo Bar
+
+Compilation exited abnormally with code 138 at Sun Sep  9 23:13:34
+
+Note the difference between line 4 and line 5. In line 4, the string
+literal is copied into the array a and stored on stack. In line 5,
+b just points to a statically allocated const array of characters.
+[5.2.2,p90]
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 5.3.1 Navigating Arrays
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main() {
+    char a[] = "Hello " "World";
+
+    for ( int i=0; a[i] != 0; ++i ) {
+        std::cout.put(a[i]);
+    }
+    std::cout.put('\n');
+
+    for ( char * p = a; *p != 0; ++p ) {
+        std::cout.put(*p);
+    }
+    std::cout << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+Hello World
+Hello World
+
+Line 6-8 and 12-14 are saying the same thing in
+two different ways. 
+
+see also §5.3.1,p92-93
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 5.4.1 Pointers and Constants
+
+\begin{slide}
+
+\begin{lstlisting}
+int main() {
+    int i = 42;
+    
+    int * const a = &i;
+    *a = 43;
+    a = &i;
+
+    const int * b = &i;
+    *b = 44;
+    b = a;
+
+    const int * const c = &i;
+    *c = 45;
+    c = a;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:6: error: assignment of read-only variable 'a'
+scratch.cpp:9: error: assignment of read-only location
+scratch.cpp:13: error: assignment of read-only location
+scratch.cpp:14: error: assignment of read-only variable 'c'
+
+[5.4.1,p96] Some people find it helpful to read such declarations right-to-left.
+
+For example, 
+  a is a const pointer to int
+  b is a pointer to an int const
+  c is a const pointer to an int const
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 5.7 Structures, initializing
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+struct X { char * a; char b[6]; int c; };
+
+std::ostream & operator<<(std::ostream & os, const X & x) {
+    return os << x.a << " " << x.b << " " << x.c;
+}
+
+int main() {
+    X x = {"Hello", "World", 42};
+    std::cout << x << std::endl;
+    std::cout << sizeof(X) << std::endl;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+Hello World 42
+16
+
+[5.2,p102] The notation used for initializing arrays can also be used for initializing
+variables of structure types.
+
+[5.2,p102] The size of an object of a structure type is not necessarily the sum of
+the sizes of its members. This is because many machines require objects of certain
+types to be allocated on architecture-dependent boundaries or handle such objects 
+much more efficiently if they are.
+
+On my machine the sizeof(X) is 16. Because
+
+  pointer(4), char(6), padding(2), int(4)
+
+The padding is added due to architecture-dependent
+boundaries.
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 6.1.7 Command-Line Arguments, NULL pointer
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main(int argc, const char ** argv) {
+    std::cout << argc;
+    for ( const char ** p = argv; *p != NULL; ++p ) {
+        std::cout << " " << (*p);
+    }
+    std::cout << std::endl;
+}
+\end{lstlisting}
+
+Given that this code is compiled, linked and executed like this:
+\\
+\begin{lstlisting}[numbers=none]
+  g++ -o foo foo.cpp 
+  ./foo bar gaz
+\end{lstlisting}  
+What will be printed out. Please comment the code.
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -o foo foo.cpp && ./foo bar gaz
+3 ./foo bar gaz
+
+This is platform dependant. If the environment cannot pass arguments,
+then argc is set to 0.
+
+The first argument, argv[0], is the name of the program as it occurs on
+the command line.
+
+[6.1.7,p117] argv[argc] == 0
+
+Although 'char ** argv' and 'char * argv[]' are both common and
+works, it is probably better to write 'char * argv[]'.
+
+[5.1.1,p88] In C, it has been popular to define a macro NULL to represent the null
+pointer. Because of C++'s tighter type checking, the use of plain 0, rather than
+any suggested NULL macro, leads to fewer problems.
+
+A pointer not pointing to something is 0, so it should really be 
+written as *p != 0, and perhaps even *p, and due to idiomatic reasons
+you might find the loop written as:
+
+  for ( const char ** p = argv; *p++; ) {
+    std::cout << " " << (*p);
+  }
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 6.2.2 Evaluation Order
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int foo(int a) {
+    std::cout << a;
+    return a;
+}
+
+void bar(int b, int c) {
+    std::cout << b << c;
+}
+
+int main() {
+    int x = foo(5) + foo(3);
+    foo(x);
+
+    int y[4] = {};
+    int i=1;
+    y[i] = i++;
+    foo(y[1]);
+
+    bar(i++, i++);
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:18: warning: operation on 'i' may be undefined
+scratch.cpp:21: warning: operation on 'i' may be undefined
+538132
+
+Without -Wall, no warning is given
+
+[6.2.2,p122] The order of evaluation of subexpressions within an expression is undefined.
+
+Line 13 might result in 35 instead of 53 [6.2.2,p122]
+
+But line 14 will always give 8 as printout
+
+Line 18 gives an undefined result, thus the output from line 19 is 
+unknown, maybe 0, maybe 1, or maybe something strange. [6.2.2,p123] 
+
+Line 21 might result int 23, just as well as 32
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% operator precedence
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main() {
+
+    int x = 4;
+    if ( 2 <= x <= 8 ) {
+        std::cout << "a" << std::endl;
+    } else {
+        std::cout << "b" << std::endl;
+    }
+
+    if( x == 12 & 7 ) {
+        std::cout << "c" << std::endl;
+    } else {
+        std::cout << "d" << std::endl;
+    }
+
+    if( x = 4 ) {
+        std::cout << "e" << std::endl;
+    } else {
+        std::cout << "f" << std::endl;
+    }
+        
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:18: warning: suggest parentheses around assignment used as truth value
+a
+d
+e
+
+The condition on line 6 really says:
+
+  (2 <= x) <= 8
+
+while line 12 says
+
+  (x == 12) & 7
+
+and line 18 is the classical assignment instead
+of comparison.
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+
+%% 6.2.5 Increment and Decrement, object lifetime
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+class Foo {
+    int value;
+public:
+    Foo() : value(42) { std::cout << "a"; }
+    ~Foo() { std::cout << "b"; }
+    Foo(const Foo & f) { std::cout << "c"; value = f.value; }
+    Foo & operator=(const Foo & f) { std::cout << "d"; value = f.value; return *this; }
+    Foo operator++(int) { std::cout << "e"; Foo old(*this); ++*this; return old;}
+    Foo & operator++() { std::cout << "f"; value += 4; return *this; }
+};
+
+int main() {
+    Foo f1;
+    std::cout << "-";
+    ++f1;
+    std::cout << "-";
+    f1++;
+    std::cout << "-";
+    Foo f2 = f1;
+    std::cout << "-";
+    f2 = f1;
+    std::cout << "-";
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+a-f-ecfb-c-d-bb
+
+This code illustrates one of the reasons why you should prefer
+preincrement instead of postincrement. Preincrement is just
+a single call to the overloaded operator (line 11), while
+postincrement results in a object copy, preincrement and
+object destruction (line 10,8,11,7). Postincrement, as
+well as postdecrement, is a very complex operation.
+
+[6.2.5p125] For example, y=++x is equivalent to y=(x+=1),
+while y=x++ is equivalent to y=(t=x,x+=1,t), where t
+is a varaible of the same type as x.
+
+There are some other things to note here:
+line 8: use member initialization instead
+line 10: consider using 'this->operator++()' instead
+
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% 6.2.6.1 new-delete, arrays, initializers
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+struct Foo {
+    Foo() { std::cout << "a"; }
+    Foo(int i) { std::cout << i; }
+    ~Foo() { std::cout << "c"; }
+};
+
+int main() {
+    Foo f1[3];
+    std::cout << "-";
+    Foo f2[3] = {1,2};
+    std::cout << "-";
+    Foo * f3 = new Foo[3];
+    std::cout << "-";
+    delete f3;
+    std::cout << "-";
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:10: warning: unused variable 'f1'
+scratch.cpp:12: warning: unused variable 'f2'
+a.out(1887) malloc: ***  Deallocation of a pointer not malloced: 0x300304; This could be a double free(), or free() called with the middle of an allocated block; Try setting environment variable MallocHelp to see tools to help debug
+aaa-12a-aaa-c-cccccc
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% declarations in conditions, complex loops
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+#include <algorithm>
+
+size_t count(char ch, std::string const & str)
+{
+    size_t n = 0;
+    char const * p = str.c_str();
+    while (n += *p == ch, *p++ != 0)
+        ;
+    return n;
+}
+
+
+int main()
+{
+    char const c[] = "Tamatawhakatangih\0angakoauaoutamateapolaiwhenuakitanaahu";
+    std::string str(c, sizeof(c));
+        
+    if (size_t n = count('w', str)) {
+        std::cout << "Character found " << n << " times" << std::endl;
+    } else {
+        std::cout << "Character not found" << std::endl;
+    }
+
+    if (size_t n = std::count(str.begin(), str.end(), 'w')) {
+        std::cout << "Character found " << n << " times" << std::endl;
+    } else {
+        std::cout << "Character not found" << std::endl;
+    }
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+Character found 1 times
+Character found 2 times
+
+
+Note the zero character inserted into c on line 17.
+
+Using C style char pointers in C++ is not recommended, most
+of the time you can solve the same task in a more elegant
+and robust way using the standard library of C++.
+
+In C++ you are encouraged to reduce the scope of variables as 
+much as possible. See line 20 and 26 to see how you can
+declare variables in the condition. The n is only valid
+inside the if blocks, including the else block.
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+
+%%% slide template
+%
+%\begin{slide}
+%
+%\begin{lstlisting}
+%
+%\end{lstlisting}
+%
+%\begin{note}
+%\begin{tiny}
+%\begin{verbatim}
+%
+%\end{verbatim}
+%\end{tiny}
+%\end{note}
+%
+%\end{slide}
+%
+
+\end{document}

@@ -1,0 +1,136 @@
+In May 2007 I sent out an email to all developers in my company:
+
+===
+Subject: Studygroup in C++ - from journeyman to master
+
+   "If C gives you enough rope to hang yourself, C++ is
+    a hardware store with lots of helpful people ready
+    to tie knots for you."
+
+I will soon start a new studygroup. The goal is to become masters
+of C++ as a group, not only as a random bunch of clever individuals.
+Together we will systematically build up our knowledge about this
+extremely powerful but also difficult programming language. We will
+discuss good and bad practices and we will learn about the hidden
+gems and pitfalls.
+
+The studygroup will be quiz-driven. We read 50 to 100 pages of
+C++ theory every week, and then we meet for one hour to solve
+and discuss related C++ topics. The meetings will start this
+autumn, but before that we will prepare ourselves by reading
+the same books during the summer - just to have a common base.
+
+If you would like to join this studygroup, then please send me
+a mail containing something like:
+
+   "Great initiative! I really want to become a master of C++ and
+    I would like to participate in a studygroup like this. I'm in!"
+
+You are all welcome to join this studygroup, but be aware that it
+will sometimes require a lot of work to keep up with the pace.
+
+Please reply within Friday June 1.
+===
+
+Nearly 60 developers signed up for this course, most of them with
+prior C++ experience. I bought three books to everyone that signed up
+for the study group: "Accelerated C++", "C++ Coding Standards: 101
+..." and of course, "The C++ Programming Language". As a preparation
+for the studygroup everybody was expected to read the Accelerated C++
+book and flip through the C++ Coding Standards book, just to get a
+common base. In August we started our meetings where we read 50-150
+pages from TC++PL book every week, and I hosted a one hour
+quiz-sessions. Every week I prepared 10-12 quiz questions based on the
+stuff that we had read in the TC++PL book and then we used the
+questions to open up discussions and share knowledge with eachother.
+It usually takes a couple of meetings to "warm up" the group, but
+after a while everybody seem to understand how they can contribute to
+the studygroup. For example, eventually even the "clever" developers
+realize that they can contribute a lot by *not* providing the direct
+answer, but instead just partially solving a task and pass the
+discussion back to the group. With 60 people I divided into four
+groups in the beginning, but as people were falling of the studygroup
+(as expected) we could host just two and sometimes only one big
+meeting every week (depending on meeting room size). In the end, 24
+people made it through the whole book and completed the studygroup,
+they received a nice diploma and a special invitation to an intense
+one week course about Pattern-Based Software Development in C++ with
+Kevlin Henney.
+
+Here is the exact schedule that we followed in 2007, as you see there
+are some "holes" in the schedule due to conflicting activities but
+also to run some "catch-up" sessions:
+
+#01 Week 35: (64 pages)
+    Chapter 1: Notes to the Reader
+    Chapter 2: A Tour of C++ 
+    Chapter 3: A Tour of the Standard Library
+
+#02 Week 37: (74 pages)
+    Chapter 4: Types and Declarations
+    Chapter 5: Pointers, Arrays, and Structures
+    Chapter 6: Expressions and Statements
+
+#03 Week 38: (78 pages)
+    Chapter 7: Functions
+    Chapter 8: Namespaces and Exceptions
+    Chapter 9: Source Files and Programs
+
+#-- Week 39: Catch-up sessions (#01, #02, #03)
+
+#04 Week 40: (78 pages)
+    Chapter 10: Classes
+    Chapter 11: Operator Overloading
+
+#05 Week 41: (54 pages)
+    Chapter 12: Derived Classes
+    Chapter 13: Templates
+
+#06 Week 43: (72 pages)
+    Chapter 14: Exception Handling
+    Chapter 15: Class Hierarchies
+
+#-- Week 45: Catch-up sessions (#04, #05, #06)
+
+#07 Week 46: (149 pages)
+    Chapter 16: Library Organization and Containers
+    Chapter 17: Standard Containers
+    Chapter 18: Algorithms and Function Objects
+    Chapter 19: Iterators and Allocators
+
+#08 Week 47: (108 pages)
+    Chapter 20: Strings
+    Chapter 21: Streams
+    Chapter 22: Numerics
+
+#09 Week 49: (100 pages)
+    Chapter 23: Development and Design
+    Chapter 24: Design and Programming
+    Chapter 25: Roles of Classes
+
+#-- Week 49: Catch-up sessions (#07, #08, #09)
+
+#10 Week 50: (176 pages)
+    Appendix A: The C++ Grammar
+    Appendix B: Compatibility
+    Appendix C: Technicalities
+    Appendix D: Locales
+    Appendix E: Standard-Library Exception Safety
+
+#11 Week 51: (4 days, 18-21 December)
+    Pattern-Based Software Development in C++ 
+
+If you want more hints and ideas about how to start and run such a
+studygroup yourself then feel free to contact me. The format is not
+restricted to C++ of course, I have done similar studygroups for Java
+and OOAD (several times actually), and the quiz format seems to work
+very well. The most interesting thing is that since I am just a
+facilitator of these studygroups, I do not need to be an expert
+upfront, I can participate in the learning process just like anyone
+else. Even the actual questions does not need to be "correct" and
+"perfect" as they are just used as a catalyst for discussions. Indeed,
+I have often seen that a major misunderstanding in the quiz can invite
+to the most interesting discussions!
+
+Regards,
+- Olve Maudal

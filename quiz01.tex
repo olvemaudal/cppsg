@@ -1,0 +1,1023 @@
+\documentclass[landscape]{slides}
+
+\usepackage[margin=.5in]{geometry}
+
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphics}
+\usepackage[english]{babel}
+
+\definecolor{hellgelb}{rgb}{1,1,0.8}
+\lstset{basicstyle={\tiny\ttfamily},backgroundcolor=\color{hellgelb},frame=single,numbers=left,numberstyle={\tiny\sffamily}}
+
+%\onlyslides{0-999}
+
+\begin{document}
+
+%%% ch1: hello world
+
+\begin{slide}
+
+\begin{lstlisting}
+#include<iostream>
+
+int main() 
+{
+    std::cout << "Hello Studygroup\n";
+}
+\end{lstlisting}
+
+What will happen if we try to compile, link and run this program? 
+Do you have any comments to the code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+The code will compile, link, run and print out "Hello Studygroup".
+
+Example from ch 1, page 5. 
+
+This is actually the first piece of code in the TC++PL book. Some will claim 
+that the missing space after include is unusual. Others will claim that a
+a missing return statement is an error, but it is perfectly legal C++ and
+surprisingly common.
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch2: for loop, post and pre increment
+
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+int main() {
+    for (int i=0; i<3; i++) 
+        std::cout << i;
+    for (int j=1; j<=3; ++j) 
+        std::cout << j;
+    return 0;
+}
+\end{lstlisting}
+
+What will this code print out?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+It will print out 012123
+
+ch2p26
+
+What is the difference between postincrement and preincrement?
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% for and while equivalence
+
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.45\linewidth}
+\tiny{foo.cpp}
+\begin{lstlisting}
+int main() {
+    int r = 42;
+
+    for (int i=1; i<8; ++i) 
+        r += i;
+
+    return r;
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.45\linewidth}
+\tiny{bar.cpp}
+\begin{lstlisting}
+int main() {
+    int r = 42;
+
+    int i=1;
+    while (i<8) {
+        r += i;
+        ++i;
+    }
+
+    return r;
+}
+\end{lstlisting}
+\end{minipage}
+\end{tabular*}
+
+Both these programs will return 70. But do you expect the resulting binary executable to be exactly the same? Eg,
+\begin{verbatim}
+g++ -S foo.cpp
+g++ -S bar.cpp
+diff foo.s bar.s
+\end{verbatim}
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+There is a simple mapping from a for-loop to a while-loop. Eg,
+
+  for ( for-init-statement condition_opt ; expression_opt ) statement
+  for ( int i=1; i<4; ++i ) { std::cout << i; }
+
+to
+
+  { while-init-statement; while (condition) statement }
+  { int i=1; while (i<4) { std::cout << i; ++i; } }
+
+So if we write the while-loop inside a block in bar.cpp, then
+foo.cpp and bar.cpp should produce exactly the same code.
+
+Note that the scoping rules for variables have changed from 
+classic C++ to modern C++. Eg,
+
+  int a;
+  for(int i=0; i<4; i++) 
+    ;
+  a = i;
+
+does not compile with C++98 because the scope of i is only
+inside the for-loop, just as if:
+
+  int a;
+  {
+    for(int i=0; i<4; i++) 
+      ;
+  }
+  a = i; // error
+
+and i is not declared outside the for-loop.
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch2: modular programming
+
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.32\linewidth}
+\tiny{stack.h}
+\begin{lstlisting}
+namespace Stack {
+    void push(char);
+    char pop();
+
+    class Overflow {};
+    class Underflow {};
+}
+\end{lstlisting}
+\tiny{main.cpp}
+\begin{lstlisting}
+#include "stack.h"
+
+int main() {
+    Stack::push('H');
+    Stack::push('e');
+    Stack::push('i');
+    Stack::pop();
+    Stack::pop();
+    Stack::push('e');
+    Stack::push('l');
+    Stack::push('l');
+    Stack::push('o');
+    return 0;
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.6\linewidth}
+\tiny{stack.cpp}
+\begin{lstlisting}
+#include <iostream>
+#include "stack.h"
+
+namespace Stack {
+    const int max_size = 4;
+    char v[max_size];
+    int top = 0;
+}
+
+void Stack::push(char c) {
+    if ( top == max_size )
+        throw Overflow();
+    std::cerr << "push: " << c << std::endl;
+    v[top++] = c;
+}
+
+char Stack::pop() {
+    if ( top == 0 )
+        throw Underflow();
+    char c = v[--top];
+    std::cerr << "pop:  " << c << std::endl;
+    return c;
+}
+\end{lstlisting}
+\end{minipage}
+
+\end{tabular*}
+
+\
+ 
+\begin{lstlisting}[numbers=none]
+g++ -Wall main.cpp stack.cpp && ./a.out
+\end{lstlisting}
+
+What will happen if you try to compile, link and run this code?
+Please comment this code. 
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall main.cpp stack.cpp && ./a.out
+push: H
+push: e
+push: i
+pop:  i
+pop:  e
+push: e
+push: l
+push: l
+terminate called after throwing an instance of 'Stack::Overflow'
+
+Naming conventions. Stroustrup and others seems to prefer
+names starting with a capital letter for classes and namespaces.
+Functions and variables starts with lower letter. .h for
+header files, and .cpp for C++ files are quite common.
+
+Notice the order of include statements in stack.cpp and
+main.cpp. At least in the stack.cpp it is important that
+we include "stack.h" first, in order to avoid undetected
+dependencies to iostream.
+
+Notice the similarities between namespaces and classes.
+According to Bjarne (p32): Where there is no need for more
+than one object of a type, the data-hiding programming
+style using modules suffices.
+
+ch2p26-29
+
+Creating singletons this way is not necessarily a good
+idea. Even if you might have just one object of a type
+in your runtime system, it might be useful to be able
+to create several objects during development and testing.
+\end{verbatim}
+\end{tiny}
+\end{note}  
+
+\end{slide}
+
+%%% ch2: concrete stack class
+
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.32\linewidth}
+\tiny{stack.h}
+\begin{lstlisting}
+class Stack {
+    char * v;
+    int top;
+    int max_size;
+    
+public:
+    class Underflow {};
+    class Overflow {};
+    class Bad_size {};
+    
+    Stack(int s);
+    ~Stack();
+
+    void push(char c);
+    char pop();
+};
+\end{lstlisting}
+\tiny{main.cpp}
+\begin{lstlisting}
+#include "stack.h"
+
+int main() {
+    Stack s(4);
+    s.push('H');
+    s.push('e');
+    s.push('i');
+    s.pop();
+    s.pop();
+    s.push('e');
+    s.push('l');
+    s.push('l');
+    s.push('o');
+    return 0;
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.6\linewidth}
+\tiny{stack.cpp}
+\begin{lstlisting}
+#include "stack.h"
+#include <iostream>
+
+Stack::Stack(int s) {
+    top = 0;
+    if ( s < 0 || s > 16 )
+        throw Bad_size();
+    max_size = s;
+    v = new char[s];
+}
+
+Stack::~Stack() {
+    delete v;
+}
+
+void Stack::push(char c) {
+    if ( top == max_size )
+        throw Overflow();
+    std::cerr << "push: " << c << std::endl;
+    v[top++] = c;
+}
+
+char Stack::pop() {
+    if ( top == 0 )
+        throw Underflow();
+    char c = v[--top];
+    std::cerr << "pop:  " << c << std::endl;
+    return c;
+}
+\end{lstlisting}
+What will happen if you try to compile, link and run this code?
+Please comment this code. 
+\end{minipage}
+
+\end{tabular*}
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall main.cpp stack.cpp && ./a.out
+push: H
+push: e
+push: i
+pop:  i
+pop:  e
+push: e
+push: l
+push: l
+terminate called after throwing an instance of 'Stack::Overflow'
+    
+There is a lot of issues to discuss in this code. Eg,
+- if you new an array, you must delete an array
+- if your class needs a destructor, you probably also need
+  implement or hide the copy constructor and assignment operator.
+- initializing members should be done in an initializer list
+- the size of the stack should probably be given as size_t
+
+ch2p26-29
+\end{verbatim}
+\end{tiny}
+\end{note}  
+
+\end{slide}
+
+%%% ch2*, class size
+
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+\begin{minipage}[c]{.6\linewidth}
+\begin{lstlisting}
+#include <iostream>
+
+class U {
+    int a;
+};
+
+class V {
+    int a;
+    int b;
+};
+
+class W {
+    int a;
+    int b;
+    void foo() { a = 3; }
+};
+
+class X {
+    int a;
+    int b;
+    void foo() { a = 3; }
+    void bar() { b = 4; }
+};
+
+class Y { };
+
+class Z {
+    void foo() {}
+};
+
+int main() {
+    std::cout << sizeof(U) << std::endl;
+    std::cout << sizeof(V) << std::endl;
+    std::cout << sizeof(W) << std::endl;
+    std::cout << sizeof(X) << std::endl;
+    std::cout << sizeof(Y) << std::endl;
+    std::cout << sizeof(Z) << std::endl;
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}{.3\linewidth}
+What will this code print out when executed?
+\end{minipage}
+\end{tabular*}
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+This is of course compiler and processor dependant. 
+On my machine (MacBook Pro, Intel Core Duo, OS X 10.4, gcc 4.0.1) I get:
+
+g++ -Wall scratch.cpp && ./a.out
+4
+8
+8
+8
+1
+1
+
+Why do you think that the size of an empty class is 1? To avoid
+having two objects with the same address, eg:
+
+  Y y1;
+  Y y2;
+  assert( &y1 != &y2 );
+
+as described in:
+
+  http://www.research.att.com/~bs/bs_faq2.html#sizeof-empty  
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%% ch2, size of derived objects
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+
+class U {
+    int a;
+    int b;
+};
+
+class V : public U {
+    int c;
+};
+
+class W : public V {
+};
+
+class X : public W {
+    int d;
+};
+
+class Y {};
+
+class Z : public Y {
+    int e;
+};
+
+int main() {
+    std::cout << sizeof(U) << std::endl;
+    std::cout << sizeof(V) << std::endl;
+    std::cout << sizeof(W) << std::endl;
+    std::cout << sizeof(X) << std::endl;
+    std::cout << sizeof(Y) << std::endl;
+    std::cout << sizeof(Z) << std::endl;
+}
+\end{lstlisting}
+
+What will this code print out when executed?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+This is of course compiler and processor dependant. 
+On my machine (MacBook Pro, Intel Core Duo, OS X 10.4, gcc 4.0.1) I get:
+
+g++ -Wall scratch.cpp && ./a.out
+8
+12
+12
+16
+1
+4
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch2,
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+
+class A {
+public:
+    void foo() { std::cout << "A"; }
+};
+
+class B : public A {
+public:
+    void foo() { std::cout << "B"; }
+};
+
+class C : public A {
+public:
+    void foo() { std::cout << "C"; }
+};
+
+class D : public A {
+};
+
+void bar(A & a) {
+    a.foo();
+}
+
+int main() {
+    B b;
+    C c;
+    bar(b);
+    bar(c);
+}
+\end{lstlisting}
+
+What will happen when you compile, link and execute this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+AA
+
+How can you get this code to print out BC? Add virtual to line 5.
+If foo in A is virtual, how can you get this code to print out
+AA by just removing one character? rewrite to void(bar A a)
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch2*, class size and vtables
+
+\begin{slide}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[c]{.6\linewidth}
+\begin{lstlisting}
+#include <iostream>
+
+class U {
+    int a;
+    int b;
+};
+
+class V {
+    int a;
+    int b;
+    void foo() { a = 2; }
+    void bar() { b = 3; }
+};
+
+class W {
+    int a;
+    int b;
+    virtual void foo() { a = 2; }
+    virtual void bar() { b = 3; }
+};
+
+class X {
+    int a;
+    int b;
+    virtual void foo() { a = 2; }
+};
+
+int main() {
+    std::cout << sizeof(U) << std::endl;
+    std::cout << sizeof(V) << std::endl;
+    std::cout << sizeof(W) << std::endl;
+    std::cout << sizeof(X) << std::endl;
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}{.3\linewidth}
+What will this code print out when executed?
+\end{minipage}
+\end{tabular*}
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+This is of course compiler and processor dependant. 
+On my machine (MacBook Pro, Intel Core Duo, OS X 10.4, gcc 4.0.1) I get:
+
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp:15: warning: 'class W' has virtual functions but non-virtual destructor
+scratch.cpp:22: warning: 'class X' has virtual functions but non-virtual destructor
+8
+8
+12
+12
+
+without -Wall, no warning is produced. 
+
+Ch2p36-37. "A common implementation technique is for the compiler to convert the name
+of a virtual function into an index into a table of pointers to functions. That is
+usually called ``a virtual function table'' or simply, a vtbl. Each class with
+virtual functions has its own vtbl identifying its virtual functions. ... Its space
+overhead is one pointer on each object of a class with virtual functions plus one vtbl 
+for each such class."
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch3, switch statement
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+
+int main() 
+{
+    char ch = 'c';
+    std::cout << '3';
+    switch(ch) {
+    case 'a':
+        std::cout << 'a';
+    case 'b':
+        std::cout << 'a';
+    case 'c':
+        std::cout << 'c';
+    case 'd':
+        std::cout << 'd';
+    case 'e':
+        std::cout << 'e';
+    default:
+        std::cout << 'x';
+    }
+    std::cout << '4';
+    return 0;
+}
+\end{lstlisting}
+
+What will this code print out?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall foo.cpp && ./a.out
+3cdex4
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch3, placement of default
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+
+int main() 
+{
+    char ch = 'r';
+    std::cout << '3';
+    switch(ch) {
+    case 'a':
+        std::cout << 'a';
+    default:
+        std::cout << 'x';
+    case 'b':
+        std::cout << 'a';
+    case 'c':
+        std::cout << 'c';
+    }
+    std::cout << '4';
+    return 0;
+}
+\end{lstlisting}
+
+What will happen when we try to compile, link and run this code?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall foo.cpp && ./a.out
+3xac4
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% ch3, defualt
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+
+int main() 
+{
+    char ch = 'r';
+    std::cout << '3';
+    switch(ch) {
+    case 'a':
+        std::cout << 'a';
+        break;
+    case 'b':
+        std::cout << 'a';
+        break;
+    case 'c':
+        std::cout << 'c';
+        break;
+    defualt:
+        std::cout << 'x';
+        break;
+    }
+    std::cout << '4';
+    return 0;
+}
+\end{lstlisting}
+
+What will this code print out when executed?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall foo.cpp && ./a.out
+foo.cpp: In function 'int main()':
+foo.cpp:17: warning: label 'defualt' defined but not used
+34
+\end{verbatim}
+\end{tiny}
+\end{note}
+\end{slide}
+
+%%% ch3, list
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+#include <list>
+
+int main() {
+    std::list<int> mylist;
+    mylist.push_front(1);
+    mylist.push_front(2);
+    mylist.push_back(3);
+    mylist.push_back(4);
+    for (std::list<int>::iterator i = mylist.begin();
+        i != mylist.end(); ++i) {
+        std::cout << *i;
+    }
+    return 0;
+}
+\end{lstlisting}
+
+What will this code print out when executed?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall foo.cpp && ./a.out
+2134
+\end{verbatim}
+\end{tiny}
+\end{note}
+\end{slide}
+
+%%% ch3, vector, size_type, range checking
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<char> v;
+    v.push_back('a');
+    v.push_back('b');
+    v.push_back('c');
+    v.push_back('d');
+
+    for (int i=0; i<v.size(); ++i) {
+        std::cout << v[i];
+    }
+    std::cout << std::endl;
+
+    for (std::vector<char>::size_type i=0; i<v.size(); ++i) {
+        std::cout << v.at(i);
+    }
+    std::cout << std::endl;
+
+    return 0;
+}
+\end{lstlisting}
+
+Please comment this code.
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In function 'int main()':
+scratch.cpp:11: warning: comparison between signed and unsigned integer expressions
+abcd
+abcd
+
+The first for-loop is bad because it uses the wrong type in the loop.
+The size of a vector, or any STL container, is not int, it is the
+size_type of the container, eg std::vector<char>::size_type.
+
+The second for-loop is "bad" because it does it calls v.size()
+several times, and also by using at() you get double range-checking.
+
+TC++PLp53
+\end{verbatim}
+\end{tiny}
+\end{note}
+\end{slide}
+
+%%% map, sorted, const argument, algorithms
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+#include <map>
+#include <string>
+
+void print(std::pair<const std::string, int> & r) {
+    std::cout << r.first << '/' << r.second << std::endl;
+}
+
+int main() {
+    std::map<std::string, int> m;
+    m["A"] = 5;
+    m["E"] = 8;
+    m["B"] = 9;
+    m["C"] = 3;
+    for_each(m.begin(), m.end(), print);
+    return 0;
+}
+\end{lstlisting}
+
+Please comment this code.
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+A/5
+B/9
+C/3
+E/8
+
+A map keeps it element ordered so an iteration traverses the
+map in (increasing) order. [p62]
+
+for_each is defined in <algorithm> so it should really
+be in the include list, even if it is often imported by 
+other STL headers. Actually, MS C++ compiler (version 14) 
+complains about missing <algorithm>
+
+Notice that print() does not change anything i r, so the
+argument is better written as const, eg
+
+  void print(const std::pair<const std::string, int> & r) {
+      std::cout << r.first << '/' << r.second << std::endl;
+  }
+
+\end{verbatim}
+\end{tiny}
+\end{note}
+\end{slide}
+
+%%% 
+
+\begin{slide}
+\begin{lstlisting}
+#include <iostream>
+#include <map>
+#include <string>
+#include <algorithm>
+
+bool gt_5(const std::pair<const std::string, int> & r) {
+    return r.second > 5;
+}
+
+int main() {
+    std::map<std::string, int> m;
+    m["A"] = 5;
+    m["E"] = 8;
+    m["B"] = 9;
+    m["C"] = 3;
+    int c = count_if(m.begin(), m.end(), gt_5);
+    std::cout << c << std::endl;
+    return 0;
+}
+\end{lstlisting}
+
+What will the following print out? 
+
+The third argument to \verb!count_if! is called a predicate. Can you think of other ways of writing such predicates?
+
+\begin{note}
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+2
+
+[p63]
+
+gt_5() is a predicate. There are other ways you can write such
+predicates. You might write a functor. Eg,
+
+  struct gt {
+      int value_;
+      gt(int value) : value_(value) {}
+      bool operator()(const std::pair<const std::string, int> & r) {
+          return r.second > value_;
+      }
+  };
+
+and then use
+
+  int c = count_if(m.begin(), m.end(), gt(5));
+
+or you can make a template version. Eg,
+
+  template <int T> bool gt(const std::pair<const std::string, int> & r) {
+      return r.second > T;
+  }
+
+and then write:
+
+  int c = count_if(m.begin(), m.end(), gt<5>);
+
+Using for example Boost, you can probably also make a lambda version.
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%% slide template
+%
+%\begin{slide}
+%
+%\begin{lstlisting}
+%
+%\end{lstlisting}
+%
+%\begin{note}
+%\begin{tiny}
+%\begin{verbatim}
+%
+%\end{verbatim}
+%\end{tiny}
+%\end{note}
+%
+%\end{slide}
+%
+
+\end{document}

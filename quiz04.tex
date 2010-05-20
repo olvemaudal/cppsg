@@ -1,0 +1,568 @@
+\documentclass[landscape]{slides}
+
+\usepackage[margin=.5in]{geometry}
+
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphics}
+\usepackage[english]{babel}
+
+\definecolor{hellgelb}{rgb}{1,1,0.8}
+\lstset{basicstyle={\tiny\ttfamily},backgroundcolor=\color{hellgelb},frame=single,numbers=left,numberstyle={\tiny\sffamily}}
+
+\newcommand{\st}{Slide Title}
+
+\onlyslides{0-999}
+
+\begin{document}
+
+%%%%%
+
+\renewcommand{\st}{Concrete types (or value types)}
+
+\begin{slide}
+
+\begin{lstlisting}
+class Date {
+    int d, m, y;
+public:
+    Date(int day, int month, int year) {
+        d = day;
+        m = month;
+        y = year;
+    }
+    int day() {
+        return d;
+    }
+    int month() {
+        return this->m;
+    }
+    int year() {
+        return y;
+    }
+};
+\end{lstlisting}
+
+Please criticize this code.
+\begin{note}
+\st
+
+\begin{tiny}
+There are several things to comment here:
+\begin{itemize}
+\item probably not a good idea to define several variables on line 2
+\item not using member initializer properly
+\item possible confusion about day, day(), and d
+\item a const after the argument list indicates that these functions do no modify the state of a Date object (query method)
+\item a non-const methods indicates that the state of an object changes (modifier method)
+\item how to handle invalid Date?
+\item do we need copy constructor and assignment operator?
+\item the use of this-> on line 13 is not necessary, but some prefer to write this-> for clearity.
+\item it often makes sence to place data members last to empasize the funtions providing the public user interface [p234]
+\end{itemize}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{mutable, name collisions}
+\begin{slide}
+
+\tiny{foo.hpp}
+\begin{lstlisting}
+#include <iostream>
+
+class Foo {
+    int value;
+    int read_counter;
+public:
+    Foo(int v) : value(v), read_counter(0) { }
+    int value();
+    void debug_print_read_counter();
+};
+\end{lstlisting}
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+
+\begin{minipage}[t]{.52\linewidth}
+\tiny{foo.cpp}
+\begin{lstlisting}
+#include "foo.hpp"
+
+int Foo::value() const {
+    read_counter++;
+    return value;
+}
+
+void Foo::debug_print_read_counter() {
+    std::cerr << "read_counter = " 
+              << read_counter << std::endl;
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.43\linewidth}
+\tiny{main.cpp}
+\begin{lstlisting}
+#include "foo.hpp"
+
+int main() {
+    Foo f(42);
+    f.debug_print_read_counter();
+    f.value();
+    f.value();
+    f.debug_print_read_counter();
+}
+\end{lstlisting}
+\end{minipage}
+\end{tabular*}
+
+\
+
+\begin{lstlisting}[numbers=none]
+g++ foo.cpp main.cpp && ./a.out  
+\end{lstlisting}
+
+This code does not compile and it smells bad. How can you fix it? Please criticize.
+
+\begin{note}
+\st
+\begin{tiny}
+
+\begin{verbatim}
+- iosfwd
+- conflicting redeclaration of Foo::value() and Foo::value
+- consider underscore postfixing of member variables
+- declaration on foo.hpp:8 and definition on foo.cpp:3 does not match
+- logical constness (p241). consider making read_counter mutable
+- debug_print_read_counter should be const, indicating that it is a query
+- there is a cohesion problem with Foo.cpp
+\end{verbatim}
+
+Once fixed, it might print:
+\begin{verbatim}
+read_counter = 0
+read_counter = 2
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{new[]/delete[], the rule of three}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct B {
+    B() { p('B'); }
+    ~B() { p('b'); }
+};
+
+class A {
+    B * v;
+public:
+    A() { p('A'); v = new B[3]; }
+    ~A() { p('a'); delete v; }
+};
+
+int main() {
+    A a1;
+    A a2 = a1;
+    A a3;
+    a3 = a1;
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program? Please criticize.
+
+\begin{note}
+\st
+\begin{tiny}
+On my machine I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+ABBBABBBababab
+\end{verbatim}
+
+\begin{itemize}
+\item if you new an array you must delete an array
+\item the rule of three, if you need a destructor, you probably need a copy constructor and copy assignment operator
+\item deleting something twice is a serious error; the behaviour is undefined and most likely disastrous
+\item should the destructor of A be virtual?
+\end{itemize}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{initialization of objects}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct A {
+    A() { p('A'); }
+    ~A() { p('a'); }
+};
+
+struct B {
+    B() { p('B'); }
+    ~B() { p('b'); }
+};
+
+class C {
+    A a;
+    B b;
+public:
+    C() : b(), a() {}
+    C(int) {}
+};
+
+int main() {
+    C c1;
+    C c2(4);
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+
+\begin{tiny}
+On my machine I get:
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+scratch.cpp: In constructor 'C::C()':
+scratch.cpp:17: warning: 'C::b' will be initialized after
+scratch.cpp:16: warning:   'A C::a'
+scratch.cpp:19: warning:   when initialized here
+ABABbaba
+\end{verbatim}
+
+Without -Wall, no warning is printed. \
+
+If a member constructor needs no argument, the member need not to be mentioned in the member initializer list.
+\
+what about native type members?
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{using member initializer}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct A {
+    int value;
+    A() { p(0); }
+    A(int v) : value(v) { p(1); }
+    ~A() { p(2); }
+    A(const A & a) { p(3); }
+    void operator=(const A & a) { p(4); }
+};
+
+struct B {
+    A a;
+    B(int v) { p('B'); a=42; p('b'); }
+};
+
+struct C {
+    A a;
+    C(int v) : a(v) { p('C'); p('c'); }
+};
+
+int main() {
+    p('-');
+    B b(42);
+    p('-');
+    C c(42);
+    p('-');
+}
+\end{lstlisting}
+
+What might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+-0B142b-1Cc-22
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{placement}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct X {
+    int a;
+    int b;
+    X() : a(1), b(2) {}
+};
+
+struct Y {
+    int c;
+    int d;
+    Y() : c(3), d(4) {}
+};
+
+int main() {
+    X x;
+    new (&x) Y;
+    p(x.a);
+    p(x.b);
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+34
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{temporary objects}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct X {
+    int value;
+    X(int v) : value(v) { p('X'); p(v); }
+    ~X() { p('x'); }
+    X(const X & x) : value(x.value) { p(2); }
+    X operator+(const X & x) { p(3); return this->value + x.value; }
+};
+
+int main() {
+    X a(4);
+    p('-');
+    p( (a + a).value );
+    p('-');
+    X b = (a + a);
+    p('-');
+    p(b.value);
+    p('-');
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+X4-3X88x-3X8-8-xx
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{implicit conversion}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct X {
+    X(int v) { p('X'); p(v); }
+    ~X() { p('x'); }
+};
+
+void foo(X x) {
+    p('F');
+}
+
+int main() {
+    foo(4);
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+X4Fx
+\end{verbatim}
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{conversion operator}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+
+template<typename T> void p(T x) { std::cout << x; }
+
+struct X {
+    int value;
+    X(int v) : value(v) { }
+    operator int() const { return value; }
+};
+
+void foo(int v) {
+    p(v);
+}
+
+int main() {
+    X x = 42;
+    foo(x);
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+42
+\end{verbatim}
+
+What happens if you put explicit in front of line 7? What would you then need to write on line 16?
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+\renewcommand\st{functor}
+\begin{slide}
+
+\begin{lstlisting}
+#include <iostream>
+#include <vector>
+
+class X {
+    int value;
+public:
+    X(int v) : value(v) {}
+    void operator()(int & i) const {
+        i += value;
+    }
+};
+
+void p(int & i) {
+    std::cout << i << std::endl;
+}
+
+int main() {
+    std::vector<int> v;
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+    for_each(v.begin(), v.end(), X(42));
+    for_each(v.begin(), v.end(), p);
+}
+\end{lstlisting}
+
+what might happen if you try to compile, link and run this program?
+
+\begin{note}
+\st
+\begin{tiny}
+\begin{verbatim}
+g++ -Wall scratch.cpp && ./a.out
+43
+44
+45
+\end{verbatim}
+
+\end{tiny}
+\end{note}
+
+\end{slide}
+
+%%%%%
+
+%% template
+
+%% \renewcommand\st{§x.x, title}
+%% \begin{slide}
+%% 
+%% \begin{lstlisting}
+%% 
+%% \end{lstlisting}
+%% 
+%% what might happen if you try to compile, link and run this program?
+%% 
+%% \begin{note}
+%% \st
+%% \begin{tiny}
+%% \begin{verbatim}
+%% 
+%% \end{verbatim}
+%% 
+%% \end{tiny}
+%% \end{note}
+%% 
+%% \end{slide}
+
+\end{document}
